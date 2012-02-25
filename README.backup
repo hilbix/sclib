@@ -1,0 +1,121 @@
+$Header: /CVSROOT/scylla-charybdis/README.backup,v 1.6 2003/11/02 22:35:39 tino Exp $
+
+THIS IS MORE A CONCEPTUAL PAPER.  BUT READ ON!
+AS THERE ARE NO MORE FUTURE RELEASES OF S&C THIS IS ALL YOU HAVE.
+
+I don't need a restore capability, as I only back up files for web
+servers or dumps of databases, where the raw data is all you need.
+And there will be a successor to S&C, however this will take quite a
+time.  For more about why S&C, read the file RATIONALE.
+
+
+Assumptions:
+
+dial-up.provider.at.eu is your location in Europe.
+this.computer.is.ko.us is the computer located in America.
+scylla-charybdis.ok.au is the backup server located in Australia.
+You don't want to fly to America nor Australia to get the backup
+done.  All you have are some "remote hands" at both locations.
+
+Prerequisites:
+
+1) You have an internet connection
+1a) All computers have an Internet connection.
+1b) this.computer.is.ko.us can reach scylla-charybdis.ok.au via Internet.
+1c) There is no firewall blocking the port where scylla listens on.
+
+2) All computers work properly
+2a) this.computer.is.ko.us is running and must be backed up.
+2b) scylla-charybdis.ok.au has scylla installed as an inetd service.
+2c) Scylla listens on the port 999 (change this accordingly).
+2d) Only one instance of the backup script runs in parallel.
+
+3) You have all tools in place
+3a) this.computer.is.ko.us has charybdis installed in /usr/local/bin/
+3b) The S&C distribution with all files lies at /home/src/sc/
+3c) scylla-charybdis.ok.au has scylla installed in /usr/local/sbin/
+3d) You have a scylla.pem to make SSL work
+3e) You know how to use your brain
+
+Process description for the lazy admin:
+
+On scylla-charybdis.ok.au install scylla as an inetd service (as root):
+
+/home/src/sc/example/make-ssl-certificate
+ln -s /some/big/filesystem /scylla
+chown nobody /scylla/.
+chmod 1777 /scylla/.
+echo "999 stream tcp nowait nobody /usr/sbin/tcpd /usr/local/sbin/scylla /scylla password /etc/scylla.pem" >> /etc/inetd.conf
+killall -1 inetd
+
+
+From dial-up.provider.at.eu open a shell to this.computer.is.ko.us
+Run screen and within screen do a su to root.
+Create a fresh directory not under /tmp and change into it. Run:
+echo password |
+/home/src/sc/example/backuploop.sh scylla-charybdis.ok.au:999 /
+
+
+Be sure
+
+- to replace password above by a real password.
+
+- to use an absalute path (starting with /) at the second argument.
+
+- that /bin/bash exists to run the script.
+
+- to echo the correct Password.  The script only waits 1 second
+  to read the input from STDIN and then displays the Usage.
+
+- netcat is installed.  If you don't want netcat,
+  UNCOMMENT the return 0 within the script.
+
+- there is enough free room in /tmp .
+
+- not to run two instances of backuploop.sh in parallel.
+
+Note that backuploop allows you to give some parameters to it:
+
+- You can give more than one path argument to the script
+
+- You can give throttle information parameter in the form
+  host:port@throttle:blocksize
+  Throtteling means, roughly transfer only throttle KB/s with
+  packets of a given blocksize (:blocksize can be left away)
+
+- If you interrupt the script, you can (nearly) restart it where it
+  broke by specifying the working-timestamp.  This looks like:
+	/tmp/scylla.backup/YYYYMMDDhhmmss
+	`hostname -f`/tmp/scylla.backup/YYYYMMDDhhmmss
+	YYYYMMDDhhmmss
+  BE SURE ALL IS SYNCED ON scylla-charybdis.ok.au!
+
+- If you want to speed things up (weird) by running several charybdis
+  in parallel, try following helper (this is thought for LANs only):
+  Be sure you have compiled /home/src/sc/example/read-nonblocking.c
+  like this: cd /home/src/sc/example && make read-nonblocking
+  echo password |
+  /home/src/sc/example/backuploophelper.sh scylla-charybdis.ok.au:999 /tmp/scylla.backup/YYYYMMDDhhmmss.tmp X
+  where YYYYMMDDhhmmss.tmp is the (existing) timestamp working
+  directory and X is a number from 1 to "number of lines of your
+  terminal less 1".
+  THIS IS MESSY, I KNOW.  But it works and does not break anything.
+
+If you are happy how this works, you can call the script from cron as
+well.
+
+Note that backuploop.sh is a script which was programmed such, that it
+even backs up a server in case the connection is extremely instable.
+For example scylla-charybdis.ok.au. can be on a dialup line reachable
+over dyndns and is disconnected and changes it's IP in more or less
+regular intervalls (like once a day).  I even do it somewhat more
+insane in opening an SSH port tunnel from my backup server at home to
+the machine to back up.
+
+That's it.
+
+-Tino
+$Log: README.backup,v $
+Revision 1.6  2003/11/02 22:35:39  tino
+CVS keywords added (I always forget this, sigh)
+

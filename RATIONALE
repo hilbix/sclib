@@ -1,0 +1,182 @@
+$Header: /CVSROOT/scylla-charybdis/RATIONALE,v 1.4 2003/11/06 22:43:56 tino Exp $
+__________
+RATIONALE:
+~~~~~~~~~~
+Why I programmed S&C.
+=====================
+
+S&C started as a quick hack because we don't live in a perfect world.
+In my life I hit quite some incredible network trouble.  S&C was not
+designed to do something quickly, it was designed to get it done, if
+possible at all (this goal is not yet fully reached, as S&C lacks an
+UDP mode, such that all packets, even if resent, are different from
+each other in an unpredictable way).
+
+- S&C even ran quite well over a defective switch which had bit errors
+which showed up systematically (packets with certain byte patterns
+were silently dropped).  This worked because of two features: Transfer
+timeouts with retry from the point of failure in the combination with
+SSL (no systematic patterns in packet streams) and blocksize (the
+error only hit packets with length over 800 byte payload).
+
+- S&C runs from dialup lines which are frequently disconnected (more
+often than once per day).
+
+- It was designed to run unattended after it was started, such that
+you can be sure, that if it tells you "the upload is finished without
+error", the upload really was finished successfully and the files on
+the other side are definitvely identical (ok, well, identical from the
+md5 point of view) to the local ones.
+
+Writing this here, I currently realize, that S&C lacks a feature to
+randomly preset the MD5 sum, such that a spoofed scylla cannot lie
+against charybdis by retaining an md5sum from the last session.
+However S&C never were thought to be highly secure.  It is not
+hardened for real security threats.  It only uses plain SSL just to
+hide data from "accidential" sniffing and such.  S&C IS NOT HARDENED
+AGAINST THINGS LIKE MAN IN THE MIDDLE ATTACKS OR WHERE YOU CANNOT
+TRUST THE SENDING OR RECEIVING MACHINE.  This is not the purpose of
+S&C.  It's just the purpose to do the best to allow data up- and
+download.
+
+Another security issue is safety against exploits.  Sad to say, S&C
+uses the standard OpenSSL library, and such exposed the library
+weakness (remote exploit), too.  I CONSIDER THIS BAD DESIGN, as there
+is no need for a non public service like S&C to ever expose "foreign
+code" (like standard libraries) to the public.  Even if S&C were a
+public service, with some clever extension this need not happen
+either.
+
+
+No further developement!
+========================
+
+S&C was thought as a "quick hack" and now sticks to this "feature".
+Even that's it not difficult to overcome some or all problems noted
+above, it's not feasible to do this based on the current code.  S&C
+reaches all my goals now, such you can call it mature enough for me
+(even considered beeing alpha code due to the problems noted).  I will
+leave it alone now and do something completely different.
+
+All you can expect from 2.3.0 on is stabilization and bugfixes.  No
+major change and no major new feature will show up from now on.  Call
+it a permanent feature freeze.  I really don't think the S&C base is
+something which can be extended easily.  It was not written for this,
+it was written for what it does now, nothing more, nothing less and no
+way better as it does it's job today.
+
+As I am now happy with S&C I don't know if or when I will come around
+to do someting which can replace S&C.  This does not mean I do not
+miss features.  This only means, S&C never were thought to have this
+features.
+
+
+Why S&C, why nothing which already exists?
+==========================================
+
+You may ask me, why I do re-invent the wheel, as there are things like
+rsync and much better file transfer programs.
+
+You are looking in the wrong direction.  Just turn round 180 degrees
+and you see where I am heading ;)
+
+The funny thing is, I consider S&C already is doing to much in
+parallel and internally it is too hard-wired as well.
+
+So you should really ask following:
+
+Q: Why does S&C use SSL directly and isn't based on SSLwrap?
+
+A: SSLwrap just is not easy to use and I sometimes do not have SSLwrap
+on the systems, however it's no problem to use a charybdis which is
+statically linked.
+
+Q: Why does S&C use ZLIB directly?
+
+A: Nearly the same argument, and do you know a (standard) compressor
+which allows two way ("flushed") communication easily?
+
+Q: Why is S&C not based on SSH, this allows compression this way.
+
+A: Good question as in early days (before the first public release)
+S&C needed SSH for compression and encryption.  However it's a little
+bit difficult to realiably reconnect a starved SSH connection.  I
+often had the case that SSH does not just break, it just starved
+(partly on bugs, partly due to external conditions like endless TCP
+retransmission).  S&C should be safe against such type of errors, this
+means it is better to have charybdis open a direct connection (dial on
+demand, etc.) to scylla instead to try to reconnect throuh a starved
+SSH tunnel.
+
+Q: Why can't you use only one single feature out of all S&C features?
+
+A: That's exactly why I stop extending S&C now, the concept does not
+give this, and S&C was never thought to provide that.
+
+
+S&C Pros
+========
+
+It's free.
+It's simple.
+You can rely on it.
+It's proven alpha code.
+It's independent.
+It's easy to understand (if you understand C and bash).
+It just works as it works and will work as it work.
+No need to change ever if you are happy with your own scripts arround S&C.
+
+
+S&C Cons
+========
+
+It's non standard and is not meant to become a standard.
+It's raw.
+It's not easy to use out of the box.
+It's not speedy.
+(For you) It's lacking important features.
+Restore is bloody shit.
+
+However, some cons might vanish over the time, even after the freeze.
+The possibly missing features can be added easily with some scripting.
+And why do you need a standard?
+
+
+Notes:
+======
+
+Note that I operate a data server (pre XML area) which currently gets
+data via eMail, HTTP and FTP.  It provides data over HTTP, SCP and
+FTP.  The only protocol running a little bit reliable when something
+fails is the good old, but unencrypted, FTP.  Even HTTP(s) is not so
+reliable (in any direction, as my HTTP service is based on a database,
+and this might be in trouble, while FTP is based on static files,
+which are far more reliable).  And everything else, fetching data via
+HTTP, getting data via eMail or HTTP, and moreover sending data via
+SCP, this all just is crap, as you can observe too frequent errors (2
+unexpected errors a year are too much, ok?) even if nothing fails
+directly.  It's impossible, but I really would like to receive with
+scylla and send with charybdis, as I then know *when* the data is
+uploaded *successfully*, such that I can write some automated scripts
+which inform me about trouble.  Today without this I have to do some
+heuristical checks (like counting eMails, you name it *eg*).  For me
+it's more easy to hack S&C where I want to have it, as instead to try
+to find out why all those bloated programs out there don't do what I
+want.  If S&C is nothing for you, it's still something for me.
+
+===========================================
+Here is the point where the RATIONALE ends.
+I deleted the rest as it was too esoteric.
+However you can find it in the CVS, but it
+will irritate you.  You have been warned.
+===========================================
+
+-Tino
+
+$Log: RATIONALE,v $
+Revision 1.4  2003/11/06 22:43:56  tino
+More documentation updates I forgot ..
+
+Revision 1.3  2003/11/02 22:29:39  tino
+CVS keywords added
+

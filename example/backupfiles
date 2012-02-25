@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# 0 is no throtteling
+# 7 is suitable for ISDN 64 KBit (estimated)
+# 15 is suitable for T-DSL 128 KBit (estimated)
+# Above values are suitable for uploading
+# WHILE working over SSH without major tty delay
+
+password="${1:-change-this-password}"
+sitename="$2"
+throttle="${3:-0}"
+blocksiz="${4:-0}"
+
+backuptosite()
+{
+find "$1" -type f -print |
+while read -r name
+do
+	/usr/local/sbin/charybdis "$1" 999 "$password" "$sitename$name" "$throttle" "$blocksiz"
+	case "$?" in
+	0)	echo "unchanged $1";;
+	2)	echo "backed_up $1";;
+	*)	echo "error____ $1";;
+	esac
+done
+}
+
+processsite()
+{
+for site
+do
+	backuptosite "$site"
+done
+}
+
+processsite /

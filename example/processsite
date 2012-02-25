@@ -1,0 +1,60 @@
+#!/bin/sh
+#
+# THIS REMOVES THE FILE AFTER SUCCESSFULL UPLOAD !!!
+
+echo "WARNING! THIS EXAMPLE DELETE THE FILES AFTER SUCCESSFUL UPLOAD!"
+echo "remove the exit one line below to make this script runnable!"
+exit
+
+cd /charybdis || exit
+
+# Your value may vary, throtteling curently
+# depends on time spent in kernel (my is a P233)
+# 0 is no throtteling
+# 7 is suitable for ISDN 64 KBit (estimated)
+# 15 is suitable for T-DSL 128 KBit (estimated)
+# The last value is suitable for uploading
+# WHILE working over SSH without major tty delay
+throttle="${1:-8}"
+
+password="${2:-change-this-password}"
+
+TMP=/tmp/movetosite.$$
+
+movetosite()
+{
+(
+cd "$1" || exit
+
+find * -type f -print |
+while read -r name
+do
+	echo "do $1"
+	echo "   $name"
+	while	/usr/local/sbin/charybdis "$1" 999 "$password" "$name" "$throttle" 512 && rm -f "$name"
+		[ -f "$name" ]
+	do
+		echo ""
+		echo "++ $1"
+		echo "   $name"
+	done
+	echo ""
+	echo "ok $1"
+	echo "   $name"
+done
+)
+}
+
+processsite()
+{
+for site in *
+do
+	[ ! -d "$site" ] && continue
+	movetosite "$site"
+done
+}
+
+while true
+do
+	processsite
+done

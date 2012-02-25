@@ -1,0 +1,106 @@
+2003-11-06    <tino@03.softkill.net>
+
+	* THERE IS ONLY ONE ChangeLog, AND IT REPRESENTS THE DEVEL BRANCH!
+	IF YOU SEE THIS, YOU PROBABLY HAVE CODE FROM THE STABLE BRANCH!
+	Thus some things noted in the ChangeLog cannot be found in the
+	source!
+
+	Historic entries, forgot to maintain ChangeLog, sorry:
+
+	* Switched to a new Web Server.
+
+	* charybdis.c (main): Timeout can now be given on the command
+	line, too.
+	
+	* example/backuploop.sh: Improved, now acts very reliable.  Basic
+	documentation is in README.backup.
+
+	* example/backuploophelper.sh: This is a crude script to run
+	additional charybdis in parallel to backuploop.sh to speed up data
+	trabnsfers in LAN.  Note that S&C never were thought to be fast.
+	S&C was thought to be reliable and work in a steadily failing
+	surrounding.
+
+	* sc-ssl.h: ssl_active added.  Is in preparation to non-SSL mode.
+
+	* RATIONALE: Some information like RATIONALE added.  It explains
+	in more detail why I need S&C.
+
+	* README.backup updated to reflect current situation.
+
+	* README.restore STILL DOCUMENTS Poseidon WHICH WILL NEVER EXIST.
+	See example/little_poseidon.awk for a workaround, WHICH I DID
+	NEVER TEST MYSELF YET!  (I wrote it from scatch and did not find
+	the time to test it!)
+
+2003-10-30    <tino@03.softkill.net>
+
+	* Makefile (version.h): version.h now created from VERSION file
+
+	* sc-include.h (VERSION): Uh, oh .. I forgot to update VERSION
+	macro in sc-include.h.  No harm, as this is purely cosmetic today.
+	Now VERSION is included from (new) version.h
+
+	* charybdis.c: CVS headers.
+
+	* example/backuploophelper.sh: I hope the last bugs now are
+	removed and this should be quite stable.  Still have to go for
+	some final tests of backuploop.sh as the code rewritten for bash
+	currently is untested.  Scylla currently is in a state where it
+	cannot be compiled and large file support for charybdis is still
+	missing.
+
+2003-10-29  root  <root@raider.03.softkill.net>
+
+	* example/backuploop.sh: Improved.  You now need bash for it.
+
+	* example/backuploopcommon.inc: Common parts of backuploop.sh and
+	backuploophelper.sh combined into one include.  This unifies the
+	calling syntax of both, too.
+
+2003-10-22    <tino@03.softkill.net>
+
+	* scylla.c (mkparent): If parent directory does exist not as
+	directory, rename it (in case file becomes directory).
+	(md5dir_open, md5dir_close, md5dir_md5send, md5dir_append)
+	(md5dir_rename, md5dir_create): added
+	(dofile, dofile_start): routine splitted a bit
+	(dofile_start): If file is something not writeable rename it away.
+	(renamenew): added
+
+2003-10-21    <tino@03.softkill.net>
+
+	* scylla.c (main): Features: SSL-less mode and MD5-Directory hack
+	(newname): Stupid debug-logging removed
+	(dofile): Some real logging (to stderr) added
+
+2003-10-07    <tino@03.softkill.net>
+
+	* example/little_poseidon.awk: added
+
+2003-10-03    <tino@03.softkill.net>
+
+	* This will become release 2.2.5 as the switch to CVS used the tag
+	RELEASE_2_2_4 (which was never really released) already and I
+	changed some files later ..
+
+	* example/backuploop.sh: incorporated into source tree
+
+	* README.backup: completed
+
+2003-05-06  root  <root@raider.03.softkill.net>
+
+	* README.restore: conceptual paper created
+
+	* README (Install): Install instructions clarified
+
+	* Makefile (CFLAGS): Added include path /usr/include/openssl for RedHat.
+	
+
+2003-03-18    <tino@03.softkill.net>
+
+	* charybdis.c (stdinfileloop, dofile): moved some code because of
+	steaming buf on unreadable/missing files.
+
+	* Cannot remember the old changes.  Started ChangeLog here.
+

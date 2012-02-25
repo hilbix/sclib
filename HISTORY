@@ -1,0 +1,93 @@
+$Header: /CVSROOT/scylla-charybdis/HISTORY,v 1.5 2003/11/02 22:38:11 tino Exp $
+
+2003-10-21 2.3.0:
+	Version 2.3.x will be the last version track.  Perhaps there
+	will be a successor sometimes with a new name.  Note that I am
+	planning a public CVS where you can access even non-released
+	versions.  As I do not know any way to sync two CVS
+	repositories automagically, I cannot use CVS at sourceforge yet.
+
+	New script:
+	example/backuploophelper.sh
+
+	New nonstable features:
+	Scylla now also knows SSL-less mode (empty PEM-File argument).
+	MD5-directory splitmode added when DIR starts with MD5/ (where
+	MD5 is ignored silently).  Large files are stored under their
+	MD5 sum and splited into 1 GB chunks - this needs DBM.
+	example/little_poseidon.sh does not work with MD5 directories,
+	so on restores you are at your own currently.
+
+	Local file append bug (possible exploit) removed:
+	The very basic logging has been moved from /tmp/scylla.log to
+	/var/log/scylla.log
+
+2003-10-02 2.2.5 (never released publicly):
+	Two helper scripts added.  One as a workaround for the missing
+	poseidon:
+	example/backuploop.sh (which runs without problems)
+	example/little_poseidon.sh (which is nearly untested)
+	See the conceptual papers README.backup and README.restore on
+	how to use this scripts to do a backup and restore.
+	EXCEPT FOR BUGFIX RELEASES THERE WILL BE NO FURTHER
+	DEVELOPEMENT OF VERSION 2.x OF S+C!
+
+2003-05-06 2.2.4 (not announced on freshmeat):
+	This version is declared stable.  Draft of some concept papers
+	added.
+	However it looks like this is the last version of this type of
+	S&C as I am in the planning phase of version 3.0, which will
+	be a complete rewrite with a major structure change.
+	So do not expect Poseidon/restore capability, sorry.
+
+2003-03-18 2.2.3:
+	A little bug in Charybdis removed which broke stream mode
+	on missing files.
+	Put version on website.
+
+2002-12-05 2.2.3:
+	Improved Odysseus output (device)
+	Improved Charybdis progress meter.
+	Improved counting of throughput.
+	Not available as download, as my web server crashed.
+	S+C of this version still cannot handle files >=2GB.
+
+2002-11-05 2.2.2:
+	First version of Odysseus, started source redesign.
+	Was available in download, but not tested and not announced.
+	It was then tested and stability (odysseus, too) proved ok.
+
+2002-07-14 2.2.1:
+	Memory leakage resolved.  Esp. Charybdis ate a lot of memory.
+	File streaming mode should be a lot more usable now ;)
+	Wohoo, there is now a homepage!
+
+2002-06-18 2.2:
+	Charybdis reads a file list from stdin if filename = -
+	This feature is highly experimental. (Fixed for 2.2.1)
+	BUGfix in newname(): would never reach .~03~
+
+2002-05-09 2.1:
+	Charybdis now sets MTU.
+	Scylla now refers to /etc/scylla.pem by default
+	Scylla writes some diagnostics to /tmp/scylla.log
+	Domain registered and documentation updated.
+
+2001-06-18 2.0: (actually there are two versions, I count the later one)
+	Scylla now needs OpenSSL and ZLIB installed.
+	Charybdis does not eat (removes) files any more.
+	It returns 0 if everything has been transferred successfully
+	and returns 2 if the file has been transferred (success unknown).
+	The throtteling code has been revised, too.
+
+2000 1.0: Initial version without ZLIB and SSL.
+	Charybdis eats away (removes) files after successful upload.
+	This version was never released publicly.
+
+$Log: HISTORY,v $
+Revision 1.5  2003/11/02 22:38:11  tino
+changed to describe 2.3.0
+
+Revision 1.4  2003/10/22 03:26:04  tino
+Taken first steps for LONGFILE support and MD5-Directory mode
+

@@ -1,0 +1,109 @@
+THIS IS THE UPCOMMING RESTORE DESCRIPTION.  A CONCEPTUAL PAPER.
+Note that you will need Poseidon for this!  Poseidon currently
+does not exist, as I am working on it.
+
+Assumptions:
+
+dial-up.provider.at.eu is your location in Europe.
+this.computer.is.ko.us is the computer located in America.
+scylla-charybdis.ok.au is the backup server located in Australia.
+You don't want to fly to America nor Australia to get the restore
+done.  All you have are some "remote hands" at both locations.
+
+Prerequisites:
+
+1) (See README.backup for more information how to get this:)
+1a) You have the backup of this.computer.is.ko.us done with S&C
+1b) The backup image is stored /somewhere in scylla-charybdis.ok.au
+1b) The backup contains the output of "odysseus / >/tmp/ody.out"
+1c) The backup and the run of odysseus are near time.
+
+2) (You can download a Knoppix ISO image at http://www.knoppix.de/ )
+2a) this.computer.is.ko.us was booted with Knoppix from CD-ROM.
+2b) The Knoppix Networking was enabled (perhaps by the remote hands)
+2c) SSH-Server was started on this.computer.is.ko.us
+2d) You can successfully do a ssh knoppix@this.computer.is.ko.us
+2e) You have a command shell on scylla-charybdis.ok.au
+2f) scylla-charybdis.ok.au can reach this.computer.is.ko.us via Internet
+
+3) You have all tools in place
+3a) There is a precompiled scylla runnable under Knoppix
+3b) You have a scylla.pem to make SSL work
+3c) scylla-charybdis.ok.au has all S&C-tools reachable in PATH
+3d) You know how to use your brain
+
+Process description for the lazy admin:
+
+Shell 1:
+
+scp `which poseidon scylla` /etc/scylla.pem knoppix@this.computer.is.ko.us:
+ssh knoppix@this.computer.is.ko.us
+su -
+fdisk
+# partition your drives
+mke2fs -j /dev/hda1
+# Be sure the drives have the capacity to take the backup
+mkdir /restore
+mount /dev/hda1 /restore
+# mount all your drive structure under the temporary "root" /restore
+screen
+tcpserver -a 999 /home/knoppix/scylla /restore PASSWORD /home/knoppix/scylla.pem &
+
+
+Shell 2:
+
+ssh scylla-charybdis.ok.au
+cd /somewhere
+screen
+# Let poseidon dump the working file list
+poseidon tmp/ody.out |
+while ! charybdis this.computer.is.ko.us 999 PASSWORD -
+do
+	sleep 1
+done
+
+Now wait until all data is transferred.
+This can take quite some time.
+If some timeout error occurs while running charybdis,
+just restart the last commando (lines from posseidon.. to ..done)
+a couple of times until nothing is transferred any more.
+Then do following:
+
+
+Shell 1:
+
+cd /restore
+# Let poseidon create all non-regular files
+/home/knoppix/poseidon -y tmp/ody.out
+# Now all you have to do is to reconfigure your bootloader
+# If the filesystem layout has changed be sure to
+# edit /restore/etc/fstab prior to following:
+chroot /restore
+/sbin/lilo
+reboot
+
+Before doing the last step pay close attention to what posseidon
+said.  There might be some files missing or be out of sync with
+the output of odysseus.  Fix this manually.
+
+It might be that you can as well use a RedHat install floppy to get
+the restore done, however tcpserver is missing there, so you need some
+more binaries to get this ready.  Note that I already have plans to
+create a minimum rescue system which will support S&C, off course.
+It will provide an on demand created minimal floppy image for any
+system configuration (such no more missing modules), which will then
+download the rest via internet, and alternatively it will fit
+completely on either an USB stick or a "business card style CD-ROM".
+
+Note that there are no more basic steps you need to do as seen above.
+The only thing you need to know is how to setup the filesystems.
+If you don't know how to do this, S&C probably is not for you (yet).
+S&C is thought as "the easy way to backup your server keeping full
+control about everything but don't bother about any data transport".
+It's only suited for admins who know what they are doing and want to
+be at charge, always.
+
+Like me ;)
+
+-Tino
+PS: scylla, charybdis, odysseus all have a y. poseidon has -y ;)

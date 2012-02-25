@@ -1,0 +1,9 @@
+echo 'DE
+BAY
+Weilheim
+geht.net
+internet services
+don.quixote.geht.net
+abuse@nospam.geht.net' |
+
+openssl req -new -x509 -nodes -days 999 -out /etc/scylla.pem -keyout /etc/scylla.pem

@@ -1,0 +1,265 @@
+$Header: /CVSROOT/scylla-charybdis/README,v 1.7 2003/11/02 22:54:05 tino Exp $
+
+Name:
+	Scylla and Charybdis (with Odysseus)
+
+Version:
+	2.3.0 (interim with several new features and scripts)
+	Scylla and Charybdis is developed with the "Release early,
+	release often" paradigma in mind.  However I have very few time,
+	so "often" probably means 1-2 times in a century, ok?
+
+License:
+	This software comes with absolutely no warranty of any kind.
+	It may be distributed under the terms of the
+	GNU General Public License (GPL) v2 or higher.
+	See file COPYING for details.
+
+Purpose:
+	To get a data odyssey done with the help of two small monsters.
+	Backup/Transfer files from one host to another.
+	Limited restore capability with little_poseidon.sh helper script.
+	Read the new file RATIONALE for why I programmed S&C.
+
+Instable:
+	Version 2.3.0 has some new features and is considered
+	nonstable.  Changes for large file support renders elder
+	scylla/charybdis incompatible on files of 1 GB size or bigger.
+
+Stable:
+	Version 2.2.5 is stable as it is - without change - based on
+	Version 2.2.4 which has transferred gigabytes successfully.
+
+Untested:
+	examples/little_poseidon.awk
+	Script to re-create the filesystem metadata from odysseus output.
+
+Features:
+	Scylla must be run from inetd.
+	Charybdis connects to Scylla to upload files.
+	The protocol uses ZLIB (compression) and SSL (encryption).
+	If a partial uploaded file is found the missing part is appended.
+	If a correctly uploaded file is found charybdis gives exit code 0.
+	The upload is protected by a clear text (SSL transmitted) password.
+	Heavy timeout protection is built in in case that dialup breaks.
+	Charybdis shows a little upload progress meter on stdout.
+	There is a throtteling feature such that Charybdis does not
+	utilize the full bandwidth.
+
+Changes:
+	see file HISTORY
+
+Notes:
+	Especially useful with auto-dialing connections.
+	Upload-success is detected on file size and MD5-HASH.
+	Throtteling is not accurate.  Look at the progress meter!
+	Currently hard coded timeout values are built in.
+	You have to connect at least twice to Scylla to find out the
+	success of the upload, so perhaps use following loop:
+
+	# example corrected for v2.1
+	for file in *
+	do
+		while charybdis host port password "$file"
+		do
+			:
+		done
+	done
+
+	LINEFEED in filenames are not yet supported.
+	This is an absolute BETA!
+	All documentation is the source!
+
+Install:
+	You need to have installed following packages:
+		openssl-devel libz-devel gdbm
+	Then type:
+		make
+	See example/make-ssl-certificate on how to create /etc/scylla.pem
+	If anything does not work you are on your own
+	(-DNO_SSL and -DNO_ZLIB probably don't work anymore).
+
+Cygwin:
+	If it does not compile under your Cygwin, have a look in
+	sc-cygwin.h
+	Cygwin needs some real weird treatment, not because of the
+	port, only because of the includes that come with Cygwin.
+
+Security:
+	Scylla shall run as nonprivileged user, like nobody.
+	Charybdis must have access to all files.
+	Odysseus must be able to read all directories.
+
+Usage:
+	scylla directory password [sslcertificate]
+		Run Scylla (this here) from inetd, see inetd.conf below.
+		It accepts an encrypted and compressed data stream.
+		Scylla assumes that Charybdis feeds a file.
+		Scylla writes the file into the given directory.
+		Missing sub-directories are created as needed.
+		Existing (changed) files are renamed.
+		Return values:
+			meaningless
+
+	charybdis host port password filename [throttle [blocksize]]
+		Charybdis (this here) assumes that scylla is at host:port
+		It opens an compressed and encrypted data stream to Scylla.
+		Charybdis authenticates at Scylla with the password.
+		Then the file is uploaded to Scylla OR (else)
+		it is detected that the file is corrctly at the other side.
+		Run this in a shell loop.
+		Broken uploads are restarted seamlessly.
+		The bandwidth can be controlled with trottle@blocksize
+		Throttle is given in KB/s
+		Return values:
+			0	file is already known & unchanged
+			1	unreadable files
+			2	file was uploaded
+			3	files uploaded and unreadable files
+			else	error/timeout/etc.
+
+	charybdis host port password - [throttle [blocksize]]
+		As before, but files are streamed.
+		This highly improves throughput as this skips
+		quite some SSL overhead.
+		However it currently does not work like tar | gzip
+
+	odysseus directory...
+		Odysseus ist pre alpha.  It traverses the directories on the
+		commandline and prints out all file and non-file stats it finds.
+		Directory must be the path which is printed by /bin/pwd.
+		If a directory differs from getcwd() odysseus bails out for
+		security reasons (i. E. directory is moved while accessed).
+
+Example:
+	Read README.backup and README.restore.  Have a look into example/
+
+	/etc/inetd.conf:
+	999 stream tcp nowait.999 scylla /usr/sbin/tcpd /usr/local/sbin/scylla /scylla change-this-password /etc/scylla.pem
+
+	V2.3.0 example for backup:
+
+	su -
+	mkdir backup &&
+	/path/to/source/of/scylla-charybdis/example/backuploop.sh back.up.host:999 /
+
+	V2.2.2 example for backup with file streaming mode (one liner with auto retry):
+
+	lst="{home,var,boot,,usr,opt,}";
+	odysseus / > `hostname`.odysseus; b="backup.`hostname`";
+	ln -s / "$b"; while eval ! find \"\$b\"/$lst -type f -xdev -print |
+	/usr/local/sbin/charybdis host.domain.tld 999 change-this-password -;
+	do sleep 500; done
+
+	V2.1 and before example:
+	# !!!WARNING!!!
+	# Following kills a file after a successful upload:
+	# !!!WARNING!!!
+	# You have to run this twice.
+	find * -type f -print |
+	while read -r a
+	do
+		while [ -f "$a" ]
+		do
+			/usr/local/sbin/charybdis host.domain.tld 999 change-this-password "$a" &&
+			rm -vf "$a"
+		done
+	done
+
+Caveats:
+	Scylla refuses to accept files which start with / or have .. as a
+	path component, thus you cannot give absolute files to Charybdis.
+
+	Scylla writes a logfile to /var/tmp/scylla.log.  This log can
+	become quite big.  To protect against this make it
+	unwriteable like with "mkdir /var/log/scylla.log"
+
+	Charybdis reads the files, thus alters the access time of the files.
+
+	example/little_poseidon.sh *is*not*tested*, sorry.
+
+Todos:
+	Finish examples/little_poseidon.sh and
+	README.backup on how to backup a Linux completely,
+	README.restore on how to restore it from scratch
+
+	V2.3.x will be the last release of Scylla+Charybdis.
+
+Unlikely:
+	Use chroot() in scylla.
+	Do not restart compression on each file.
+	Better scylla logging.
+	Transport file flags (like tar).
+	SSL authentication and reverse (download) operation.
+	Public Upload/Download (skip password) Option.
+	MTU hacks and UDP option (backup succeeds on really weird links).
+
+	DBM support which will lead to:
+	Hephaestos (compressed file storage)
+	Options for Odysseus like -xdev or odysseus | charybdis
+
+Bugs:
+	LINEFEED in filenames are not yet supported!
+	Streaming mode garbles speedometer output of charybdis.
+	Streaming mode currently resets zlib compression for each file.
+	Throtteling is not very accurate.
+	Charybdis tells some crap like 'protocol failure' instead of telling
+	about SSL problems if something fails (unreadable /etc/scylla.pem).
+	S&C currently has no sparse file support.
+	In stream mode there is no real grace if something breaks.
+	Only files are supported, hardlinks are copied individually,
+	softlinks are copied as the file the softlink points to.
+	Version 2.2 really does not work well with V2.1.
+	Version 2.3 is incompatible to V2.2 on files bigger than 2GB.
+
+Observations:
+	I observed once scylla+charybdis did disagree on a MD5 sum on an
+	identical file, such that the data already present was renamed
+	and uploaded again.  I canceled the transfer, renamed the file
+	back an started it again.  Now both detected that the file needed
+	no upload again.  Maybee it's due to the fact that the *receiving*
+	machine has NON ECC RAM such that this was a bit glitch in main
+	memory.  Anyway, no harm was done, only something was transferred
+	again which was already there correctly.  Note that I never observed
+	the opposit, so charybdis never told, a file was successfully
+	uploaded while this was not the case.  However I always transfer
+	more data than the cache size of the machine, such that scylla must
+	re-read from disk when MD5 sums are calculated.  However this
+	thoughts leave room for improvement for the paranoid (like me):
+	Scylla should write out files synced with RAM caching disabled.
+	But how to obtain this in a portable way?
+	As soon as files are stored under the MD5 filename this will become
+	less 'urgent', though.
+
+History:
+ 	In V2.2 there was a serious memory leackage, fixed in V2.2.1.
+	V2.2.4 now compiles and was tested under RedHat 8.0, too.
+	V2.2.5 now compiles and was tested under RedHat 9.0, too.
+	V2.3.0 got big file and starts to need GDBM library now.
+	Read README.backup and README.restore on how to do a restore.
+
+Roadmap:
+	No roadmap any more, sorry.
+	V2.3.x will be the very last release before a complete
+	rewrite, which will be released under a new name.
+	The homepage of S+C will lead you to the successor.
+	However, this rewrite may take years, as always.
+
+Source:
+	Homepage: http://www.scylla-charybdis.com/
+	Latest:   http://www.scylla-charybdis.com/scylla-charybdis.tgz
+
+Copyright:
+	Copyright (C)2000-2003 by Valentin Hilbig
+	diskimg-reply@03.softkill.org
+	(My real eMail address is not listed on public media due to SPAM.)
+	http://geht.net/tino/tino.html
+	(I am natively German speaking)
+
+$Log: README,v $
+Revision 1.7  2003/11/02 22:54:05  tino
+Cygwin special treatment
+
+Revision 1.6  2003/11/02 22:38:46  tino
+Updated for the upcomming release
+
